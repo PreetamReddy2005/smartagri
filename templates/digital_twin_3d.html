@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartAgri Digital Twin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            background-color: #0f172a;
+            /* slate-900 */
+        }
+
+        /* Custom Scrollbar for range inputs */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            margin-top: -8px;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+
+        /* Floating Animation */
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px) translateX(0px);
+                opacity: 0;
+            }
+
+            50% {
+                transform: translateY(-30px) translateX(15px);
+                opacity: 1;
+            }
+        }
+
+        .animate-float {
+            animation: float linear infinite;
+        }
+    </style>
+</head>
+
+<body class="text-white">
+
+    <!-- Background Grid -->
+    <div class="absolute inset-0 opacity-20 pointer-events-none">
+        <div class="absolute inset-0"
+            style="background-image: linear-gradient(to right, rgb(51, 65, 85) 1px, transparent 1px), linear-gradient(to bottom, rgb(51, 65, 85) 1px, transparent 1px); background-size: 60px 60px;">
+        </div>
+    </div>
+
+    <!-- Floating Particles -->
+    <div id="particles" class="absolute inset-0 pointer-events-none overflow-hidden z-0">
+        <!-- Particles injected via JS -->
+    </div>
+
+    <!-- 3D Container -->
+    <div id="twin3d" class="absolute inset-0 z-0"></div>
+
+    <!-- Premium Header -->
+    <div class="absolute top-0 left-0 right-0 z-10 p-8 pointer-events-none">
+        <div class="max-w-7xl mx-auto flex items-start justify-between">
+            <div class="space-y-3 pointer-events-auto">
+                <div class="flex items-center gap-4">
+                    <div
+                        class="h-12 w-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/50">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold text-white tracking-tight">Digital Twin</h1>
+                        <p class="text-sm text-slate-400 mt-1">Smart Agriculture Ecosystem</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <div id="status-pill"
+                        class="px-4 py-2 rounded-full backdrop-blur-xl border transition-all bg-emerald-500/10 border-emerald-500/30 shadow-lg shadow-emerald-500/20">
+                        <div class="flex items-center gap-2">
+                            <div id="status-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                            <span id="status-text" class="text-xs font-medium text-white uppercase tracking-wider">Live
+                                Connection</span>
+                        </div>
+                    </div>
+                    <div class="px-4 py-2 rounded-full bg-white/5 backdrop-blur-xl border border-white/10">
+                        <span class="text-xs text-slate-300 font-medium">v2.4.1</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="flex gap-3 pointer-events-auto">
+                <div class="px-5 py-3 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 min-w-[120px]">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-lg">🌡️</span>
+                        <span class="text-xs text-slate-400 uppercase tracking-wider font-medium">Temp</span>
+                    </div>
+                    <div id="display-temp"
+                        class="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
+                        25°C</div>
+                </div>
+                <div class="px-5 py-3 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 min-w-[120px]">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-lg">💧</span>
+                        <span class="text-xs text-slate-400 uppercase tracking-wider font-medium">Humidity</span>
+                    </div>
+                    <div id="display-humidity"
+                        class="text-2xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
+                        60%</div>
+                </div>
+                <div class="px-5 py-3 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 min-w-[120px]">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-lg">🌱</span>
+                        <span class="text-xs text-slate-400 uppercase tracking-wider font-medium">Moisture</span>
+                    </div>
+                    <div id="display-moisture"
+                        class="text-2xl font-bold bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
+                        50%</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Premium Control Panel -->
+    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 w-full max-w-4xl px-4">
+        <div
+            class="bg-slate-900/40 backdrop-blur-2xl border border-white/10 rounded-3xl shadow-2xl shadow-black/50 p-8">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-lg font-semibold text-white">Environmental Controls</h3>
+                <button id="toggle-live"
+                    class="px-4 py-2 rounded-xl text-xs font-medium transition-all bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-600">
+                    Monitoring
+                </button>
+            </div>
+
+            <div class="grid grid-cols-4 gap-8">
+                <!-- Temperature -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🌡️</span>
+                            <label
+                                class="text-xs font-medium text-slate-300 uppercase tracking-wider">Temperature</label>
+                        </div>
+                        <span id="val-temp" class="text-lg font-bold text-emerald-400">25°C</span>
+                    </div>
+                    <input type="range" id="temp" min="15" max="35" value="25"
+                        class="w-full h-2 bg-slate-700/50 rounded-full appearance-none cursor-pointer">
+                    <div class="flex justify-between text-xs text-slate-500 font-medium">
+                        <span>15°C</span><span>35°C</span>
+                    </div>
+                </div>
+
+                <!-- Humidity -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">💧</span>
+                            <label class="text-xs font-medium text-slate-300 uppercase tracking-wider">Humidity</label>
+                        </div>
+                        <span id="val-humidity" class="text-lg font-bold text-blue-400">60%</span>
+                    </div>
+                    <input type="range" id="humidity" min="30" max="90" value="60"
+                        class="w-full h-2 bg-slate-700/50 rounded-full appearance-none cursor-pointer">
+                    <div class="flex justify-between text-xs text-slate-500 font-medium">
+                        <span>30%</span><span>90%</span>
+                    </div>
+                </div>
+
+                <!-- Soil Moisture -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🌱</span>
+                            <label class="text-xs font-medium text-slate-300 uppercase tracking-wider">Soil
+                                Moisture</label>
+                        </div>
+                        <span id="val-moisture" class="text-lg font-bold text-green-400">50%</span>
+                    </div>
+                    <input type="range" id="moisture" min="0" max="100" value="50"
+                        class="w-full h-2 bg-slate-700/50 rounded-full appearance-none cursor-pointer">
+                    <div class="flex justify-between text-xs text-slate-500 font-medium">
+                        <span>0%</span><span>100%</span>
+                    </div>
+                </div>
+
+                <!-- Pest Pressure -->
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🐛</span>
+                            <label class="text-xs font-medium text-slate-300 uppercase tracking-wider">Pest
+                                Pressure</label>
+                        </div>
+                        <span id="val-pests" class="text-lg font-bold text-red-400">0%</span>
+                    </div>
+                    <input type="range" id="pests" min="0" max="100" value="0"
+                        class="w-full h-2 bg-slate-700/50 rounded-full appearance-none cursor-pointer">
+                    <div class="flex justify-between text-xs text-slate-500 font-medium">
+                        <span>0%</span><span>100%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts -->
+    <div class="absolute bottom-8 right-8 z-10 space-y-2 pointer-events-none">
+        <div class="flex items-center gap-3 text-sm justify-end">
+            <kbd
+                class="px-3 py-1.5 rounded-lg bg-slate-800/50 backdrop-blur-xl border border-white/10 text-white font-mono font-semibold shadow-lg min-w-[40px] text-center">H</kbd>
+            <span class="text-slate-400 text-xs">Toggle Heat</span>
+        </div>
+        <div class="flex items-center gap-3 text-sm justify-end">
+            <kbd
+                class="px-3 py-1.5 rounded-lg bg-slate-800/50 backdrop-blur-xl border border-white/10 text-white font-mono font-semibold shadow-lg min-w-[40px] text-center">P</kbd>
+            <span class="text-slate-400 text-xs">Toggle Pests</span>
+        </div>
+        <div class="flex items-center gap-3 text-sm justify-end">
+            <kbd
+                class="px-3 py-1.5 rounded-lg bg-slate-800/50 backdrop-blur-xl border border-white/10 text-white font-mono font-semibold shadow-lg min-w-[40px] text-center">B</kbd>
+            <span class="text-slate-400 text-xs">Toggle Bloom</span>
+        </div>
+        <div class="flex items-center gap-3 text-sm justify-end">
+            <kbd
+                class="px-3 py-1.5 rounded-lg bg-slate-800/50 backdrop-blur-xl border border-white/10 text-white font-mono font-semibold shadow-lg min-w-[40px] text-center">R</kbd>
+            <span class="text-slate-400 text-xs">Reset View</span>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+        import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+        import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
+
+        // Color Palette
+        const COLORS = {
+            clayTerracotta: 0xB86B4B,
+            warmClayLight: 0xE6C58A,
+            softPlantGreen: 0x8FBF7F,
+            offWhiteClay: 0xF6EDE6,
+            soilDry: 0x8B6F47,
+            soilWet: 0x5C4033,
+            skyWarm: 0xFFE5CC,
+            skyCool: 0xCCE5FF
+        };
+
+        class DigitalTwin3D {
+            constructor(containerId = 'twin3d') {
+                this.container = document.getElementById(containerId);
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+                this.controls = null;
+                this.composer = null;
+
+                // Scene objects
+                this.ground = null;
+                this.plants = [];
+                this.pests = [];
+                this.greenhouse = null;
+
+                // Animation state
+                this.clock = new THREE.Clock();
+                this.time = 0;
+
+                // Environment state
+                this.envState = {
+                    temperature: 25,
+                    humidity: 60,
+                    soil_moisture: 50,
+                    pest_level: 0
+                };
+
+                // Current state (for lerping)
+                this.currentState = {
+                    soilColor: new THREE.Color(COLORS.soilDry),
+                    fogDensity: 0.02,
+                    heatIntensity: 0,
+                    pestVisibility: 0
+                };
+
+                // Effect toggles
+                this.effects = {
+                    heat: true,
+                    pests: true,
+                    bloom: true
+                };
+            }
+
+            initScene() {
+                // Renderer
+                this.renderer = new THREE.WebGLRenderer({
+                    antialias: true,
+                    alpha: false
+                });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25)); // Optimized for performance
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                this.renderer.toneMappingExposure = 1.2;
+                this.container.appendChild(this.renderer.domElement);
+
+                // Scene
+                this.scene = new THREE.Scene();
+                this.scene.fog = new THREE.FogExp2(COLORS.skyCool, 0.02);
+                this.scene.background = new THREE.Color(0x0f172a); // Match slate-900
+
+                // Camera
+                this.camera = new THREE.PerspectiveCamera(
+                    50,
+                    window.innerWidth / window.innerHeight,
+                    0.1,
+                    1000
+                );
+                this.camera.position.set(8, 6, 8);
+                this.camera.lookAt(0, 0, 0);
+
+                // Controls
+                this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.05;
+                this.controls.maxPolarAngle = Math.PI / 2.2;
+                this.controls.minDistance = 5;
+                this.controls.maxDistance = 20;
+                this.controls.target.set(0, 1, 0);
+
+                // Lights
+                this.setupLights();
+
+                // Create scene objects
+                this.createGround();
+                this.createGreenhouse();
+                this.createPlants();
+                this.createPests();
+
+                // Postprocessing
+                this.setupPostprocessing();
+                this.composer.setSize(window.innerWidth, window.innerHeight);
+
+                // Event listeners (with debouncing for resize)
+                let resizeTimeout;
+                window.addEventListener('resize', () => {
+                    clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(() => this.onResize(), 150);
+                });
+                this.setupKeyboardControls();
+            }
+
+            setupLights() {
+                const keyLight = new THREE.DirectionalLight(0xFFE5CC, 1.5);
+                keyLight.position.set(5, 8, 3);
+                keyLight.castShadow = true;
+                keyLight.shadow.mapSize.width = 2048;
+                keyLight.shadow.mapSize.height = 2048;
+                keyLight.shadow.camera.near = 0.5;
+                keyLight.shadow.camera.far = 50;
+                keyLight.shadow.camera.left = -10;
+                keyLight.shadow.camera.right = 10;
+                keyLight.shadow.camera.top = 10;
+                keyLight.shadow.camera.bottom = -10;
+                this.scene.add(keyLight);
+
+                const fillLight = new THREE.DirectionalLight(0xCCE5FF, 0.4);
+                fillLight.position.set(-3, 4, -3);
+                this.scene.add(fillLight);
+
+                const hemiLight = new THREE.HemisphereLight(0xFFE5CC, 0x5C4033, 0.6);
+                this.scene.add(hemiLight);
+
+                const ambientLight = new THREE.AmbientLight(0xF6EDE6, 0.3);
+                this.scene.add(ambientLight);
+            }
+
+            // SAFE SHADER IMPLEMENTATION
+            createClayMaterial(baseColor, options = {}) {
+                const {
+                    roughness = 0.85,
+                    metalness = 0.1,
+                    subsurface = true
+                } = options;
+
+                const material = new THREE.MeshStandardMaterial({
+                    color: baseColor,
+                    roughness,
+                    metalness,
+                    envMapIntensity: 0.5
+                });
+
+                if (subsurface) {
+                    material.onBeforeCompile = (shader) => {
+                        console.log("Compiling Clay Shader", material.uuid);
+
+                        // 1. Inject Varyings in Vertex Shader
+                        shader.vertexShader = 'varying vec3 vMyNormal;\nvarying vec3 vMyViewPosition;\n' + shader.vertexShader;
+
+                        shader.vertexShader = shader.vertexShader.replace(
+                            '#include <beginnormal_vertex>',
+                            `
+                            #include <beginnormal_vertex>
+                            vMyNormal = normalize( normalMatrix * objectNormal );
+                            `
+                        );
+
+                        shader.vertexShader = shader.vertexShader.replace(
+                            '#include <begin_vertex>',
+                            `
+                            #include <begin_vertex>
+                            vMyViewPosition = - ( modelViewMatrix * vec4( position, 1.0 ) ).xyz;
+                            `
+                        );
+
+                        // 2. Inject Helper Functions and Varyings in Fragment Shader
+                        shader.fragmentShader = `
+                            varying vec3 vMyNormal;
+                            varying vec3 vMyViewPosition;
+                            
+                            float t_hash(float n) { return fract(sin(n) * 43758.5453123); }
+                            float t_noise3(vec3 x) {
+                                vec3 p = floor(x);
+                                vec3 f = fract(x);
+                                f = f * f * (3.0 - 2.0 * f);
+                                float n = p.x + p.y * 57.0 + 113.0 * p.z;
+                                return mix(mix(mix(t_hash(n + 0.0), t_hash(n + 1.0), f.x),
+                                               mix(t_hash(n + 57.0), t_hash(n + 58.0), f.x), f.y),
+                                           mix(mix(t_hash(n + 113.0), t_hash(n + 114.0), f.x),
+                                               mix(t_hash(n + 170.0), t_hash(n + 171.0), f.x), f.y), f.z);
+                            }
+                            float t_fbm(vec3 x) {
+                                float v = 0.0;
+                                float a = 0.5;
+                                vec3 shift = vec3(100.0);
+                                for (int i = 0; i < 3; ++i) {
+                                    v += a * t_noise3(x);
+                                    x = x * 2.0 + shift;
+                                    a *= 0.5;
+                                }
+                                return v;
+                            }
+                            float t_fresnel(vec3 viewDir, vec3 normal, float power) {
+                                return pow(1.0 - clamp(dot(viewDir, normal), 0.0, 1.0), power);
+                            }
+                        ` + shader.fragmentShader;
+
+                        // 3. Apply Effects in Fragment Shader
+                        shader.fragmentShader = shader.fragmentShader.replace(
+                            'vec4 diffuseColor = vec4( diffuse, opacity );',
+                            `
+                            vec4 diffuseColor = vec4( diffuse, opacity );
+                            
+                            // Custom Clay Effects
+                            vec3 viewDir = normalize(vMyViewPosition);
+                            vec3 normal = normalize(vMyNormal);
+                            
+                            // Micro-noise
+                            float noiseVal = t_fbm(vMyViewPosition * 10.0);
+                            diffuseColor.rgb *= (0.9 + 0.2 * noiseVal);
+                            
+                            // Rim Lighting
+                            float rim = t_fresnel(viewDir, normal, 3.0);
+                            diffuseColor.rgb += vec3(0.2) * rim * 0.5;
+                            `
+                        );
+                    };
+                }
+
+                return material;
+            }
+
+            createGround() {
+                const geometry = new THREE.PlaneGeometry(15, 15, 32, 32);
+                const positions = geometry.attributes.position;
+                for (let i = 0; i < positions.count; i++) {
+                    const x = positions.getX(i);
+                    const y = positions.getY(i);
+                    const noise = (Math.sin(x * 0.5) * Math.cos(y * 0.5)) * 0.1;
+                    positions.setZ(i, noise);
+                }
+                positions.needsUpdate = true;
+                geometry.computeVertexNormals();
+
+                const material = this.createClayMaterial(COLORS.soilDry, { roughness: 0.9 });
+                this.ground = new THREE.Mesh(geometry, material);
+                this.ground.rotation.x = -Math.PI / 2;
+                this.ground.receiveShadow = true;
+                this.scene.add(this.ground);
+            }
+
+            createGreenhouse() {
+                this.greenhouse = new THREE.Group();
+                const frameMat = this.createClayMaterial(COLORS.warmClayLight, { roughness: 0.7 });
+                const glassMat = new THREE.MeshPhysicalMaterial({
+                    color: 0xDCE6F0,
+                    roughness: 0.3,
+                    transmission: 0, // DISABLED TO FIX WEBGL ERROR
+                    transparent: true,
+                    opacity: 0.4,
+                    ior: 1.5
+                });
+
+                const postGeometry = new THREE.CylinderGeometry(0.08, 0.1, 3, 8);
+                [[-2, 1.5, -2], [2, 1.5, -2], [-2, 1.5, 2], [2, 1.5, 2]].forEach(pos => {
+                    const post = new THREE.Mesh(postGeometry, frameMat);
+                    post.position.set(...pos);
+                    post.castShadow = true;
+                    this.greenhouse.add(post);
+                });
+
+                const beamGeometry1 = new THREE.BoxGeometry(4.5, 0.1, 0.1);
+                [0, 1].forEach(i => {
+                    const beam = new THREE.Mesh(beamGeometry1, frameMat);
+                    beam.position.set(0, 3, i === 0 ? -2 : 2);
+                    beam.castShadow = true;
+                    this.greenhouse.add(beam);
+                });
+
+                const beamGeometry2 = new THREE.BoxGeometry(0.1, 0.1, 4.5);
+                [0, 1].forEach(i => {
+                    const beam = new THREE.Mesh(beamGeometry2, frameMat);
+                    beam.position.set(i === 0 ? -2 : 2, 3, 0);
+                    beam.castShadow = true;
+                    this.greenhouse.add(beam);
+                });
+
+                const panelGeometry = new THREE.PlaneGeometry(4, 3);
+                [
+                    { pos: [0, 1.5, 2], rot: [0, 0, 0] },
+                    { pos: [0, 1.5, -2], rot: [0, Math.PI, 0] },
+                    { pos: [2, 1.5, 0], rot: [0, Math.PI / 2, 0] },
+                    { pos: [-2, 1.5, 0], rot: [0, -Math.PI / 2, 0] }
+                ].forEach(side => {
+                    const panel = new THREE.Mesh(panelGeometry, glassMat);
+                    panel.position.set(...side.pos);
+                    panel.rotation.set(...side.rot);
+                    panel.receiveShadow = true;
+                    this.greenhouse.add(panel);
+                });
+
+                this.scene.add(this.greenhouse);
+            }
+
+            createPlant(x, z) {
+                const height = 1 + Math.random() * 0.5;
+                const leafCount = 4 + Math.floor(Math.random() * 3);
+                const plant = new THREE.Group();
+
+                const stemMat = this.createClayMaterial(COLORS.softPlantGreen, { roughness: 0.8 });
+                const stemGeometry = new THREE.CylinderGeometry(0.03, 0.06, height, 8);
+                const stem = new THREE.Mesh(stemGeometry, stemMat);
+                stem.position.y = height / 2;
+                stem.castShadow = true;
+                plant.add(stem);
+
+                const leafMat = this.createClayMaterial(COLORS.softPlantGreen, { roughness: 0.75 });
+                for (let i = 0; i < leafCount; i++) {
+                    const t = i / leafCount;
+                    const leafY = height * 0.3 + t * height * 0.6;
+                    const leafGeometry = new THREE.BoxGeometry(0.3, 0.15, 0.05);
+                    const leaf = new THREE.Mesh(leafGeometry, leafMat);
+                    leaf.position.set(Math.sin(t * Math.PI * 4) * 0.1, leafY, Math.cos(t * Math.PI * 4) * 0.1);
+                    leaf.rotation.set(0, t * Math.PI * 2, Math.sin(t * Math.PI * 2) * 0.3);
+                    leaf.castShadow = true;
+                    plant.add(leaf);
+                }
+
+                plant.position.set(x, 0, z);
+                plant.userData.baseHeight = height;
+                plant.userData.phase = Math.random() * Math.PI * 2;
+                return plant;
+            }
+
+            createPlants() {
+                [[-1.5, 0], [0, 0.5], [1.5, -0.5]].forEach(([x, z]) => {
+                    const plant = this.createPlant(x, z);
+                    this.plants.push(plant);
+                    this.scene.add(plant);
+                });
+            }
+
+            createPest() {
+                const pest = new THREE.Group();
+                const bodyGeometry = new THREE.SphereGeometry(0.08, 8, 6);
+                bodyGeometry.scale(1, 0.6, 1.2);
+                const bodyMat = this.createClayMaterial(0x3D2817, { roughness: 0.7, subsurface: false });
+                bodyMat.transparent = true;
+                const body = new THREE.Mesh(bodyGeometry, bodyMat);
+                body.castShadow = true;
+                pest.add(body);
+
+                // Store reference for opacity animation
+                pest.userData.body = body;
+
+                // Antennae
+                const antennaGeometry = new THREE.CylinderGeometry(0.005, 0.005, 0.15, 4);
+                const antennaMat = new THREE.MeshStandardMaterial({ color: 0x2D1810 });
+                for (let i = 0; i < 2; i++) {
+                    const antenna = new THREE.Mesh(antennaGeometry, antennaMat);
+                    antenna.position.set(i === 0 ? -0.04 : 0.04, 0.05, 0.06);
+                    antenna.rotation.z = (i === 0 ? -1 : 1) * 0.3;
+                    pest.add(antenna);
+                }
+
+                pest.scale.set(0.8, 0.8, 0.8);
+                pest.userData.phase = Math.random() * Math.PI * 2;
+                return pest;
+            }
+
+            createPests() {
+                this.plants.forEach(plant => {
+                    const pest = this.createPest();
+                    pest.position.copy(plant.position);
+                    pest.position.y = 2;
+                    pest.visible = false;
+                    this.pests.push(pest);
+                    this.scene.add(pest);
+                });
+            }
+
+            setupPostprocessing() {
+                this.composer = new EffectComposer(this.renderer);
+                this.composer.addPass(new RenderPass(this.scene, this.camera));
+
+                this.bloomPass = new UnrealBloomPass(
+                    new THREE.Vector2(window.innerWidth, window.innerHeight),
+                    0.3, 0.4, 0.85
+                );
+                this.composer.addPass(this.bloomPass);
+
+                this.heatPass = new ShaderPass({
+                    uniforms: {
+                        tDiffuse: { value: null },
+                        time: { value: 0 },
+                        intensity: { value: 0 }
+                    },
+                    vertexShader: `
+                        varying vec2 vUv;
+                        void main() {
+                            vUv = uv;
+                            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                        }
+                    `,
+                    fragmentShader: `
+                        uniform sampler2D tDiffuse;
+                        uniform float time;
+                        uniform float intensity;
+                        varying vec2 vUv;
+                        void main() {
+                            vec2 uv = vUv;
+                            if (intensity > 0.01) {
+                                float wave = sin(uv.y * 20.0 + time * 2.0) * 0.002 * intensity;
+                                uv.x += wave;
+                            }
+                            gl_FragColor = texture2D(tDiffuse, uv);
+                        }
+                    `
+                });
+                this.composer.addPass(this.heatPass);
+
+                const fxaaPass = new ShaderPass(FXAAShader);
+                const pixelRatio = this.renderer.getPixelRatio();
+                fxaaPass.material.uniforms['resolution'].value.x = 1 / (window.innerWidth * pixelRatio);
+                fxaaPass.material.uniforms['resolution'].value.y = 1 / (window.innerHeight * pixelRatio);
+                this.composer.addPass(fxaaPass);
+            }
+
+            setupKeyboardControls() {
+                window.addEventListener('keydown', (e) => {
+                    switch (e.key.toLowerCase()) {
+                        case 'h':
+                            this.effects.heat = !this.effects.heat;
+                            console.log('Heat effect:', this.effects.heat);
+                            break;
+                        case 'p':
+                            this.effects.pests = !this.effects.pests;
+                            console.log('Pests visible:', this.effects.pests);
+                            break;
+                        case 'b':
+                            this.effects.bloom = !this.effects.bloom;
+                            this.bloomPass.enabled = this.effects.bloom;
+                            console.log('Bloom effect:', this.effects.bloom);
+                            break;
+                        case 'r':
+                            this.controls.reset();
+                            break;
+                    }
+                });
+            }
+
+            updateEnvironment(data) {
+                if (data) this.envState = { ...this.envState, ...data };
+
+                // Soil Color
+                const moisture = this.envState.soil_moisture / 100;
+                const targetSoilColor = new THREE.Color(COLORS.soilDry).lerp(new THREE.Color(COLORS.soilWet), moisture);
+                this.currentState.soilColor.lerp(targetSoilColor, 0.05);
+                if (this.ground) this.ground.material.color.copy(this.currentState.soilColor);
+
+                // Fog
+                const humidity = this.envState.humidity / 100;
+                const targetFog = 0.01 + humidity * 0.04;
+                this.currentState.fogDensity += (targetFog - this.currentState.fogDensity) * 0.05;
+                this.scene.fog.density = this.currentState.fogDensity;
+
+                // Heat
+                const temp = this.envState.temperature;
+                const targetHeat = temp > 30 ? (temp - 30) / 10 : 0;
+                this.currentState.heatIntensity += (targetHeat - this.currentState.heatIntensity) * 0.05;
+                if (this.heatPass) this.heatPass.uniforms.intensity.value = this.effects.heat ? this.currentState.heatIntensity : 0;
+
+                // Pests
+                const pestPressure = this.envState.pest_level / 100;
+                const targetPestVis = this.effects.pests ? pestPressure : 0;
+                this.currentState.pestVisibility += (targetPestVis - this.currentState.pestVisibility) * 0.1;
+
+                this.pests.forEach(pest => {
+                    if (this.currentState.pestVisibility > 0.01) {
+                        pest.visible = true;
+                        if (pest.userData?.body?.material) {
+                            pest.userData.body.material.opacity = this.currentState.pestVisibility;
+                        }
+                        pest.position.y = 2 + Math.sin(this.time * 2 + pest.userData.phase) * 0.2;
+                    } else {
+                        pest.visible = false;
+                    }
+                });
+            }
+
+            onResize() {
+                if (!this.camera || !this.renderer || !this.composer) return;
+                this.camera.aspect = window.innerWidth / window.innerHeight;
+                this.camera.updateProjectionMatrix();
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.composer.setSize(window.innerWidth, window.innerHeight);
+
+                const pixelRatio = this.renderer.getPixelRatio();
+                const fxaaPass = this.composer.passes.find(pass => pass.material && pass.material.uniforms['resolution']);
+                if (fxaaPass) {
+                    fxaaPass.material.uniforms['resolution'].value.x = 1 / (window.innerWidth * pixelRatio);
+                    fxaaPass.material.uniforms['resolution'].value.y = 1 / (window.innerHeight * pixelRatio);
+                }
+            }
+
+            animate() {
+                requestAnimationFrame(() => this.animate());
+                this.time += this.clock.getDelta();
+                if (this.controls) this.controls.update();
+                this.updateEnvironment();
+                if (this.heatPass) this.heatPass.uniforms.time.value = this.time;
+                if (this.composer) this.composer.render();
+            }
+        }
+
+        // Initialize
+        try {
+            const twin = new DigitalTwin3D();
+            twin.initScene();
+            twin.animate();
+
+            // UI Logic
+            const sliders = {
+                temp: document.getElementById('temp'),
+                humidity: document.getElementById('humidity'),
+                moisture: document.getElementById('moisture'),
+                pests: document.getElementById('pests')
+            };
+
+            const displays = {
+                temp: document.getElementById('display-temp'),
+                humidity: document.getElementById('display-humidity'),
+                moisture: document.getElementById('display-moisture')
+            };
+
+            const values = {
+                temp: document.getElementById('val-temp'),
+                humidity: document.getElementById('val-humidity'),
+                moisture: document.getElementById('val-moisture'),
+                pests: document.getElementById('val-pests')
+            };
+
+            // Load saved state
+            Object.keys(sliders).forEach(key => {
+                const saved = localStorage.getItem(`twin_${key}`);
+                if (saved) {
+                    sliders[key].value = saved;
+                    const val = parseFloat(saved);
+                    twin.envState[key === 'moisture' ? 'soil_moisture' : key === 'pests' ? 'pest_level' : key === 'temp' ? 'temperature' : key] = val;
+
+                    // Update UI
+                    values[key].textContent = val + (key === 'temp' ? '°C' : '%');
+                    if (displays[key]) displays[key].textContent = val + (key === 'temp' ? '°C' : '%');
+                }
+            });
+
+            // Bind events
+            Object.entries(sliders).forEach(([key, element]) => {
+                element.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    localStorage.setItem(`twin_${key}`, val);
+
+                    const stateKey = key === 'moisture' ? 'soil_moisture' :
+                        key === 'pests' ? 'pest_level' :
+                            key === 'temp' ? 'temperature' : key;
+
+                    twin.envState[stateKey] = val;
+
+                    // Update UI
+                    values[key].textContent = val + (key === 'temp' ? '°C' : '%');
+                    if (displays[key]) displays[key].textContent = val + (key === 'temp' ? '°C' : '%');
+                });
+            });
+
+            // Live Toggle
+            let isLive = true;
+            const toggleBtn = document.getElementById('toggle-live');
+            const statusPill = document.getElementById('status-pill');
+            const statusDot = document.getElementById('status-dot');
+            const statusText = document.getElementById('status-text');
+
+            toggleBtn.addEventListener('click', () => {
+                isLive = !isLive;
+                toggleBtn.textContent = isLive ? 'Monitoring' : 'Paused';
+                toggleBtn.className = isLive
+                    ? 'px-4 py-2 rounded-xl text-xs font-medium transition-all bg-emerald-500 text-white shadow-lg shadow-emerald-500/30 hover:bg-emerald-600'
+                    : 'px-4 py-2 rounded-xl text-xs font-medium transition-all bg-slate-700 text-slate-300 hover:bg-slate-600';
+
+                statusPill.className = isLive
+                    ? 'px-4 py-2 rounded-full backdrop-blur-xl border transition-all bg-emerald-500/10 border-emerald-500/30 shadow-lg shadow-emerald-500/20'
+                    : 'px-4 py-2 rounded-full backdrop-blur-xl border transition-all bg-slate-500/10 border-slate-500/30';
+
+                statusDot.className = isLive ? 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse' : 'w-2 h-2 rounded-full bg-slate-400';
+                statusText.textContent = isLive ? 'Live Connection' : 'Offline';
+            });
+
+            // Particles
+            const particlesContainer = document.getElementById('particles');
+            for (let i = 0; i < 20; i++) {
+                const p = document.createElement('div');
+                p.className = 'absolute w-1 h-1 bg-emerald-400/30 rounded-full animate-float';
+                p.style.left = Math.random() * 100 + '%';
+                p.style.top = Math.random() * 100 + '%';
+                p.style.animationDelay = Math.random() * 5 + 's';
+                p.style.animationDuration = (10 + Math.random() * 10) + 's';
+                particlesContainer.appendChild(p);
+            }
+
+        } catch (error) {
+            console.error("Failed to initialize 3D scene:", error);
+            document.getElementById('twin3d').innerHTML = `<div style="color:white; padding:20px">Error loading 3D scene: ${error.message}</div>`;
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,50 @@
+{
+  "version": "1.0.0",
+  "mqtt": {
+    "broker": "localhost",
+    "port": 1883,
+    "topics": {
+      "sensor_data": "smartagri/sensor_data",
+      "actuator_commands": "smartagri/actuator_commands",
+      "crop_selection": "smartagri/crop_selection"
+    }
+  },
+  "stm32": {
+    "serial_ports": [
+      "COM3",
+      "COM4",
+      "COM5",
+      "/dev/ttyUSB0",
+      "/dev/ttyACM0"
+    ],
+    "baud_rate": 115200,
+    "timeout": 2
+  },
+  "web": {
+    "host": "0.0.0.0",
+    "port": 5000,
+    "debug": false
+  },
+  "ml": {
+    "model_path": "ml_model.pkl",
+    "forecast_steps": 4,
+    "crops": [
+      "tomatoes",
+      "lettuce",
+      "spinach",
+      "strawberries"
+    ]
+  },
+  "sensors": {
+    "moisture_threshold": 40,
+    "water_level_critical": 15,
+    "temperature_ranges": {
+      "min": -10,
+      "max": 50
+    },
+    "ph_ranges": {
+      "min": 0,
+      "max": 14
+    }
+  }
+}

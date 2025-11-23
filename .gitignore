@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+.metadata/
+
+# Environment variables
+.env
+
+# Logs
+*.log
+smartagri_logs/
+
+# Data files (optional - uncomment if you don't want to commit these)
+# field_data.json
+
+# STM32 build artifacts
+stm32_src/
+temp_cube/
+
+# Temporary and backup files
+*.backup
+*.bak
+*.tmp
+list_ports.py
+
+# Windows
+Thumbs.db
+desktop.ini
+
+# Node modules (for frontend)
+frontend/node_modules/
+frontend/build/
+frontend/dist/
+
+# Test files (optional)
+# tests/
+
+# Legacy files
+legacy/
+abc/
+abcd/
+asa/
+faa/
+fo/
+fog/
+fog_computing/
+bridge/
+stm/

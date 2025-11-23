@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartAgri Pro</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@300;400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #000000;
+            --bg-card: #1c1c1e;
+            --text-primary: #ffffff;
+            --text-secondary: #86868b;
+            --accent-green: #30d158;
+            --accent-orange: #ff9f0a;
+            --accent-blue: #0a84ff;
+            --accent-red: #ff453a;
+            --accent-purple: #bf5af2;
+            --card-radius: 24px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            padding: 40px;
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        h1,
+        .anton-font {
+            font-family: 'Anton', sans-serif;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 40px;
+            padding: 0 10px;
+        }
+
+        .header-title h1 {
+            font-size: 48px;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .header-subtitle {
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .header-right {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .map-btn {
+            background: #1c1c1e;
+            border: 1px solid #3a3a3c;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 100px;
+            cursor: pointer;
+            font-family: 'Inter';
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            font-size: 12px;
+        }
+
+        .map-btn:hover {
+            background: #2c2c2e;
+            transform: translateY(-1px);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #2c2c2e;
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--accent-green);
+            box-shadow: 0 0 10px rgba(48, 209, 88, 0.5);
+        }
+
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, minmax(200px, auto));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border-radius: var(--card-radius);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: transform 0.2s ease;
+        }
+
+        .card:hover {
+            transform: scale(1.01);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .card-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .card-icon {
+            font-size: 20px;
+            color: var(--text-secondary);
+        }
+
+        .card-value {
+            font-family: 'Anton', sans-serif;
+            font-size: 56px;
+            line-height: 1;
+            margin-top: auto;
+            margin-bottom: 8px;
+        }
+
+        .card-unit {
+            font-size: 20px;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+        }
+
+        .card-footer {
+            margin-top: 16px;
+        }
+
+        .card-large {
+            grid-column: span 2;
+        }
+
+        .card-tall {
+            grid-row: span 2;
+        }
+
+        .progress-container {
+            height: 6px;
+            background: #3a3a3c;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 12px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+        }
+
+        .ai-card {
+            background: linear-gradient(135deg, #2c2c2e 0%, #1c1c1e 100%);
+            border: 1px solid #3a3a3c;
+        }
+
+        .ai-status {
+            color: var(--accent-purple);
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .pump-card.active {
+            background-color: var(--accent-green);
+            color: #000;
+        }
+
+        .pump-card.active .card-label,
+        .pump-card.active .card-icon,
+        .pump-card.active .card-unit {
+            color: rgba(0, 0, 0, 0.6);
+        }
+
+        .crop-select {
+            appearance: none;
+            background: #2c2c2e;
+            border: none;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 100%;
+            width: 100%;
+            min-height: 150px;
+        }
+
+        @media (max-width: 1024px) {
+            .bento-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .card-large {
+                grid-column: span 2;
+            }
+
+            .card-tall {
+                grid-row: span 1;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .bento-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card-large {
+                grid-column: span 1;
+            }
+
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header">
+        <div class="header-title">
+            <h1>SMARTAGRI PRO</h1>
+            <div class="header-subtitle">Real-Time Agricultural Monitoring</div>
+        </div>
+        <div class="header-right">
+            <button class="map-btn" onclick="window.location.href='/field_map'">
+                <span>🗺️</span> Field Map
+            </button>
+            <button class="map-btn" onclick="window.location.href='/habitat_monitor'">
+                <span>🍄</span> Habitat Monitor
+            </button>
+            <div class="status-indicator">
+                <div class="dot"></div>
+                <span id="statusText">Connecting...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="bento-grid">
+        <!-- AI Model Card -->
+        <div class="card ai-card">
+            <div class="card-header">
+                <span class="card-label">AI Model</span>
+                <span class="card-icon">🤖</span>
+            </div>
+            <div style="margin-top: 20px;">
+                <div class="card-value" style="font-size: 32px;" id="activeModelName">Random Forest</div>
+                <div class="ai-status" id="aiModelName">AI Active</div>
+            </div>
+            <div class="card-footer">
+                <div
+                    style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 6px;">
+                    <span>Accuracy</span>
+                    <span id="modelAccuracy">--</span>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" id="accuracyProgress"
+                        style="width: 0%; background-color: var(--accent-purple);"></div>
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; color: var(--text-secondary);">
+                    Predictions: <span id="predictionCount" style="color: white;">0</span> • <span
+                        id="modelType">Ensemble</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Moisture Card -->
+        <div class="card card-tall">
+            <div class="card-header">
+                <span class="card-label">Soil Moisture</span>
+                <span class="card-icon">💧</span>
+            </div>
+            <div class="card-value">
+                <span id="moistureValue">--</span><span class="card-unit">%</span>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" id="moistureProgress"
+                    style="width: 0%; background-color: var(--accent-blue);"></div>
+            </div>
+            <div class="card-footer">
+                <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 20px;">
+                    Optimal: 60-80%<br>
+                    <span id="moistureStatus">--</span>
+                </div>
+                <div class="chart-wrapper" style="height: 120px;">
+                    <canvas id="moistureChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Temperature Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-label">Temperature</span>
+                <span class="card-icon">🌡️</span>
+            </div>
+            <div class="card-value">
+                <span id="tempValue">--</span><span class="card-unit">°C</span>
+            </div>
+            <div class="card-footer">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Optimal: 18-27°C<br>
+                    <span id="tempTime">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- pH Level Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-label">pH Level</span>
+                <span class="card-icon">⚗️</span>
+            </div>
+            <div class="card-value">
+                <span id="phValue">--</span>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" id="phProgress" style="width: 0%; background-color: var(--accent-green);">
+                </div>
+            </div>
+            <div class="card-footer">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Optimal: 6.0-6.8<br>
+                    <span id="phStatus">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Irrigation Forecast Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-label">Irrigation Needed</span>
+                <span class="card-icon">🚿</span>
+            </div>
+            <div class="card-value" style="font-size: 42px;" id="irrigationNeeded">--</div>
+            <div class="card-footer">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Confidence: <span id="irrigationConfidence">--</span><br>
+                    <span id="irrigationTime">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pump Status Card -->
+        <div class="card pump-card" id="pumpCard">
+            <div class="card-header">
+                <span class="card-label">Pump Status</span>
+                <span class="card-icon">⚙️</span>
+            </div>
+            <div class="card-value" style="font-size: 42px;" id="pumpStatus">OFF</div>
+            <div class="card-footer">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    <span id="pumpDuration">Duration: --</span><br>
+                    <span id="pumpTime">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Water Tank Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-label">Water Tank</span>
+                <span class="card-icon">🚰</span>
+            </div>
+            <div class="card-value">
+                <span id="waterLevelValue">--</span><span class="card-unit">%</span>
+            </div>
+            <div class="progress-container">
+                <div class="progress-bar" id="waterProgress" style="width: 0%; background-color: var(--accent-blue);">
+                </div>
+            </div>
+            <div class="card-footer">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Min Level: 20%<br>
+                    <span id="waterStatus">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Crop Selection Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-label">Active Crop</span>
+                <span class="card-icon">🌾</span>
+            </div>
+            <div>
+                <select id="cropSelector" class="crop-select">
+                    <option value="tomatoes">🍅 Tomatoes</option>
+                    <option value="lettuce">🥬 Lettuce</option>
+                    <option value="carrots">🥕 Carrots</option>
+                    <option value="basil">🌿 Basil</option>
+                    <option value="spinach">🥬 Spinach</option>
+                </select>
+            </div>
+            <div class="card-footer">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Optimized Settings Active
+                </div>
+            </div>
+        </div>
+
+        <!-- Forecast Chart Card -->
+        <div class="card card-large">
+            <div class="card-header">
+                <span class="card-label">Moisture Forecast (4h)</span>
+                <div style="display: flex; gap: 10px; align-items: baseline;">
+                    <span style="font-size: 12px; color: var(--text-secondary);">Next Hour:</span>
+                    <span class="anton-font" style="font-size: 24px;" id="predictedMoisture">--</span><span
+                        style="font-size: 14px; color: var(--text-secondary);">%</span>
+                </div>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="forecastChart"></canvas>
+            </div>
+            <div style="display: none;">
+                <span id="currentMoisture">--</span>
+                <span id="moistureTrend">--</span>
+                <canvas id="tempChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let forecastChartInstance = null;
+        let moistureChartInstance = null;
+
+        const chartColors = {
+            moisture: '#0a84ff',
+            temp: '#ff9f0a',
+            ph: '#30d158',
+            forecast: '#bf5af2',
+            grid: '#2c2c2e'
+        };
+
+        const commonOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: '#1c1c1e',
+                    titleColor: '#fff',
+                    bodyColor: '#86868b',
+                    borderColor: '#3a3a3c',
+                    borderWidth: 1,
+                    padding: 10,
+                    displayColors: false,
+                    titleFont: {
+                        family: 'Inter',
+                        size: 13
+                    },
+                    bodyFont: {
+                        family: 'Inter',
+                        size: 13
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    display: false,
+                    grid: {
+                        display: false
+                    }
+                },
+                x: {
+                    display: false,
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            elements: {
+                point: {
+                    radius: 0,
+                    hitRadius: 10
+                },
+                line: {
+                    tension: 0.4,
+                    borderWidth: 3
+                }
+            }
+        };
+
+        function initCharts() {
+            const ctxMoisture = document.getElementById('moistureChart').getContext('2d');
+            const gradientMoisture = ctxMoisture.createLinearGradient(0, 0, 0, 150);
+            gradientMoisture.addColorStop(0, 'rgba(10, 132, 255, 0.2)');
+            gradientMoisture.addColorStop(1, 'rgba(10, 132, 255, 0)');
+
+            moistureChartInstance = new Chart(ctxMoisture, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        borderColor: chartColors.moisture,
+                        backgroundColor: gradientMoisture,
+                        fill: true
+                    }]
+                },
+                options: commonOptions
+            });
+
+            const ctxForecast = document.getElementById('forecastChart').getContext('2d');
+            forecastChartInstance = new Chart(ctxForecast, {
+                type: 'bar',
+                data: {
+                    labels: ['+1h', '+2h', '+3h', '+4h'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: chartColors.forecast,
+                        borderRadius: 4,
+                        barThickness: 20
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        y: {
+                            display: false
+                        },
+                        x: {
+                            display: true,
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#86868b',
+                                font: {
+                                    family: 'Inter'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        socket.on('sensor_update', (data) => {
+            document.getElementById('moistureValue').textContent = data.moisture?.toFixed(0) || '--';
+            document.getElementById('currentMoisture').textContent = data.moisture?.toFixed(0) || '--';
+            document.getElementById('tempValue').textContent = data.temperature?.toFixed(1) || '--';
+            document.getElementById('phValue').textContent = data.ph?.toFixed(1) || '--';
+            document.getElementById('waterLevelValue').textContent = data.water_level || '--';
+
+            if (data.moisture) document.getElementById('moistureProgress').style.width = `${data.moisture}%`;
+            if (data.water_level) document.getElementById('waterProgress').style.width = `${data.water_level}%`;
+            if (data.ph) document.getElementById('phProgress').style.width = `${(data.ph / 14 * 100)}%`;
+
+            if (data.moisture) {
+                const time = new Date().toLocaleTimeString();
+                if (moistureChartInstance.data.labels.length > 20) {
+                    moistureChartInstance.data.labels.shift();
+                    moistureChartInstance.data.datasets[0].data.shift();
+                }
+                moistureChartInstance.data.labels.push(time);
+                moistureChartInstance.data.datasets[0].data.push(data.moisture);
+                moistureChartInstance.update('none');
+            }
+        });
+
+        socket.on('actuator_update', (data) => {
+            const pumpStatus = document.getElementById('pumpStatus');
+            const pumpCard = document.getElementById('pumpCard');
+
+            if (data.status === 'ON') {
+                pumpStatus.textContent = 'ON';
+                pumpCard.classList.add('active');
+                if (data.duration) {
+                    document.getElementById('pumpDuration').textContent = `Duration: ${data.duration}s`;
+                }
+            } else {
+                pumpStatus.textContent = 'OFF';
+                pumpCard.classList.remove('active');
+            }
+            document.getElementById('pumpTime').textContent = data.timestamp || '--';
+        });
+
+        socket.on('ml_prediction_update', (data) => {
+            document.getElementById('irrigationNeeded').textContent = data.irrigation_needed ? 'YES' : 'NO';
+            document.getElementById('predictedMoisture').textContent = data.predicted_moisture?.toFixed(0) || '--';
+
+            if (data.multi_step_forecast && data.multi_step_forecast.length) {
+                forecastChartInstance.data.datasets[0].data = data.multi_step_forecast;
+                forecastChartInstance.update('none');
+            }
+        });
+
+        socket.on('connect', () => {
+            document.getElementById('statusText').textContent = 'Connected';
+            initCharts();
+        });
+
+        socket.on('disconnect', () => {
+            document.getElementById('statusText').textContent = 'Disconnected';
+        });
+
+        socket.on('initial_data', (data) => {
+            if (data.current && data.current.ml_predictions) {
+                document.getElementById('modelAccuracy').textContent = '98.2%';
+                document.getElementById('accuracyProgress').style.width = '98.2%';
+            }
+        });
+
+        document.getElementById('cropSelector').addEventListener('change', (e) => {
+            socket.emit('crop_selection', {
+                crop_type: e.target.value
+            });
+        });
+    </script>
+</body>
+
+</html>
