@@ -7,12 +7,6 @@ import signal
 # Configuration
 os.environ["MQTT_BROKER"] = "localhost"
 os.environ["MQTT_PORT"] = "1883"
-# SERIAL_PORT is now auto-detected - no need to set it manually
-# If you want to force a specific port, uncomment and set:
-# os.environ["SERIAL_PORT"] = "COM8"
-os.environ["BAUD_RATE"] = "38400"
-# Prevent Visualizer from locking the port by giving it a dummy port for habitat
-os.environ["HABITAT_PORT"] = "COM99"
 
 processes = []
 
@@ -32,8 +26,8 @@ def cleanup():
     print("Done.")
 
 def main():
-    print("🚀 Starting SmartAgri System (Manual Mode)")
-    print("==========================================")
+    print("🚀 Starting SmartAgri System (SIMULATION MODE)")
+    print("============================================")
 
     # 1. Processor
     start_process(f"{sys.executable} processor.py", "Fog Processor")
@@ -43,13 +37,10 @@ def main():
     start_process(f"{sys.executable} visualizer.py", "Visualizer Dashboard")
     time.sleep(2)
 
-    # 3. STM32 Bridge
-    start_process(f"{sys.executable} stm32_mqtt_bridge.py", "STM32 Bridge")
-
-    # 4. pH Sensor Bridge
-    start_process(f"{sys.executable} ph_sensor_bridge.py", "pH Sensor Bridge")
+    # 3. Simulator
+    start_process(f"{sys.executable} publisher_sim.py", "Sensor Simulator")
     
-    print("\n✅ All services started.")
+    print("\n✅ Simulation running.")
     print("Dashboard: http://localhost:5000")
     print("Press Ctrl+C to stop.")
 
@@ -60,7 +51,6 @@ def main():
             for p, name in processes:
                 if p.poll() is not None:
                     print(f"⚠️ {name} exited unexpectedly with code {p.returncode}")
-                    # Optional: restart logic
     except KeyboardInterrupt:
         cleanup()
 

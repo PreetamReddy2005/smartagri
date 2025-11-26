@@ -1,0 +1,6 @@
+2025-11-26 09:17:02,797 - INFO - Starting pH Sensor Bridge...
+2025-11-26 09:17:02,901 - INFO -   0: COM3 - Standard Serial over Bluetooth link (COM3)
+2025-11-26 09:17:02,901 - INFO -   1: COM6 - Standard Serial over Bluetooth link (COM6)
+2025-11-26 09:17:02,901 - INFO -   2: COM4 - Standard Serial over Bluetooth link (COM4)
+2025-11-26 09:17:02,901 - INFO -   3: COM5 - Standard Serial over Bluetooth link (COM5)
+2025-11-26 09:17:02,903 - INFO - Opening COM3 at 9600...

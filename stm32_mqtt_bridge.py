@@ -259,9 +259,10 @@ class STM32Bridge:
             
             # Rain: "r" -> "rain" (convert from ADC to boolean-ish)
             # Higher ADC = no rain detected, lower = rain
+            # Threshold: 3000 (wet sensor reads 2000-2500)
             if 'r' in data:
                 rain_raw = data['r']
-                mapped_data['rain'] = 1 if rain_raw < 2000 else 0
+                mapped_data['rain'] = 1 if rain_raw < 3000 else 0
             elif 'rain' in data:
                 mapped_data['rain'] = data['rain']
             

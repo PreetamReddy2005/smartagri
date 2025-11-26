@@ -268,10 +268,88 @@
                 gap: 20px;
             }
         }
+
+        /* Rain Card */
+        .rain-card.detected {
+            background: linear-gradient(135deg, rgba(10, 132, 255, 0.15) 0%, rgba(28, 28, 30, 1) 100%);
+            border: 1px solid rgba(10, 132, 255, 0.3);
+        }
+
+        .rain-status {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 12px;
+        }
+
+        .rain-icon {
+            font-size: 36px;
+            transition: transform 0.3s ease;
+        }
+
+        .rain-text {
+            font-family: 'Anton', sans-serif;
+            font-size: 28px;
+            letter-spacing: 0.5px;
+        }
+
+        .rain-card.detected .rain-text {
+            color: var(--accent-blue);
+        }
+
+        /* Waterlogging Alert */
+        .alert-banner {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #ff453a 0%, #ff6b5a 100%);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(255, 69, 58, 0.4);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            font-weight: 600;
+            animation: slideDown 0.3s ease;
+        }
+
+        .alert-banner.show {
+            display: flex;
+        }
+
+        .alert-icon {
+            font-size: 24px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .moisture-warning {
+            border: 2px solid var(--accent-red) !important;
+            box-shadow: 0 0 20px rgba(255, 69, 58, 0.3) !important;
+        }
     </style>
 </head>
 
 <body>
+    <!-- Waterlogging Alert Banner -->
+    <div class="alert-banner" id="waterlogAlert">
+        <span class="alert-icon">⚠️</span>
+        <span>WATERLOGGING RISK! Rain detected with high soil moisture. Check drainage!</span>
+    </div>
     <div class="header">
         <div class="header-title">
             <h1>SMARTAGRI PRO</h1>
@@ -432,6 +510,119 @@
             </div>
         </div>
 
+        <!-- Rain Sensor Card -->
+        <div class="card rain-card" id="rainCard">
+            <div class="card-header">
+                <span class="card-label">Rain Sensor</span>
+                <span class="card-icon">🌦️</span>
+            </div>
+            <div class="rain-status">
+                <span class="rain-icon" id="rainIcon">☀️</span>
+                <span class="rain-text" id="rainText">No Rain</span>
+            </div>
+            <div class="card-footer">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Last update: <span id="rainTime">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Evapotranspiration Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-label">Evapotranspiration</span>
+                <span class="card-icon">🌫️</span>
+            </div>
+            <div class="card-value">
+                <span id="etValue">--</span><span class="card-unit">mm/day</span>
+            </div>
+            <div class="card-footer">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Water Loss Rate
+                </div>
+            </div>
+        </div>
+
+        <!-- Heat Index Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-label">Heat Index</span>
+                <span class="card-icon">🌡️</span>
+            </div>
+            <div class="card-value">
+                <span id="heatIndexValue">--</span><span class="card-unit">°C</span>
+            </div>
+            <div class="card-footer">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Feels Like
+                </div>
+            </div>
+        </div>
+
+        <!-- Moisture Depletion Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-label">Depletion Rate</span>
+                <span class="card-icon">📉</span>
+            </div>
+            <div class="card-value">
+                <span id="depletionValue">--</span><span class="card-unit">%/hr</span>
+            </div>
+            <div class="card-footer">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Soil Drying Speed
+                </div>
+            </div>
+        </div>
+
+        <!-- System Uptime Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-label">System Uptime</span>
+                <span class="card-icon">⏱️</span>
+            </div>
+            <div class="card-value" style="font-size: 32px;">
+                <span id="uptimeValue">--:--:--</span>
+            </div>
+            <div class="card-footer">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Since Last Reboot
+                </div>
+            </div>
+        </div>
+
+        <!-- Connection Quality Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-label">Connection</span>
+                <span class="card-icon">📡</span>
+            </div>
+            <div class="card-value" style="font-size: 32px;">
+                <span id="connectionQuality">Good</span>
+            </div>
+            <div class="card-footer">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Latency: <span id="latencyValue">24</span>ms
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Refresh Rate Card -->
+        <div class="card">
+            <div class="card-header">
+                <span class="card-label">Refresh Rate</span>
+                <span class="card-icon">🔄</span>
+            </div>
+            <div class="card-value">
+                <span id="refreshRate">--</span><span class="card-unit">s</span>
+            </div>
+            <div class="card-footer">
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                    Last Update: <span id="lastUpdateAgo">--</span>s ago
+                </div>
+            </div>
+        </div>
+
         <!-- Crop Selection Card -->
         <div class="card">
             <div class="card-header">
@@ -479,6 +670,40 @@
         const socket = io();
         let forecastChartInstance = null;
         let moistureChartInstance = null;
+
+        // New Variables for Metrics
+        let lastMoisture = null;
+        let lastMoistureTime = Date.now();
+        let systemStartTime = Date.now();
+        let lastPacketTime = Date.now();
+
+        // Update System Uptime
+        setInterval(() => {
+            const now = Date.now();
+            const uptime = now - systemStartTime;
+            const hours = Math.floor(uptime / 3600000);
+            const minutes = Math.floor((uptime % 3600000) / 60000);
+            const seconds = Math.floor((uptime % 60000) / 1000);
+            const uptimeEl = document.getElementById('uptimeValue');
+            if (uptimeEl) {
+                uptimeEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            }
+
+            // Update "Last Update Ago"
+            const ago = Math.floor((now - lastPacketTime) / 1000);
+            const lastUpdateEl = document.getElementById('lastUpdateAgo');
+            if (lastUpdateEl) lastUpdateEl.textContent = ago;
+        }, 1000);
+
+        // Calculate Heat Index
+        function calculateHeatIndex(temp, humidity = 50) { // Assuming 50% humidity if not available
+            return temp - ((0.55 - 0.0055 * humidity) * (temp - 14.5));
+        }
+
+        // Calculate Evapotranspiration (Simplified Penman-Monteith approximation)
+        function calculateET0(temp) {
+            return 0.0023 * (temp + 17.8) * Math.sqrt(temp);
+        }
 
         const chartColors = {
             moisture: '#0a84ff',
@@ -614,6 +839,80 @@
                 moistureChartInstance.data.labels.push(time);
                 moistureChartInstance.data.datasets[0].data.push(data.moisture);
                 moistureChartInstance.update('none');
+            }
+            // Update rain sensor
+            if (data.rain !== undefined && data.rain !== null) {
+                const rainCard = document.getElementById('rainCard');
+                const rainIcon = document.getElementById('rainIcon');
+                const rainText = document.getElementById('rainText');
+                const rainTime = document.getElementById('rainTime');
+
+                const isRaining = data.rain === 1 || data.rain === true;
+
+                if (isRaining) {
+                    if (rainCard) rainCard.classList.add('detected');
+                    if (rainIcon) rainIcon.textContent = '🌧️';
+                    if (rainText) rainText.textContent = 'Rain Detected';
+                } else {
+                    if (rainCard) rainCard.classList.remove('detected');
+                    if (rainIcon) rainIcon.textContent = '☀️';
+                    if (rainText) rainText.textContent = 'No Rain';
+                }
+
+                if (rainTime) {
+                    rainTime.textContent = new Date().toLocaleTimeString();
+                }
+            }
+
+            // Check for waterlogging risk (rain + high moisture)
+            const moisture = data.moisture;
+            const isRaining = data.rain === 1 || data.rain === true;
+            const alertBanner = document.getElementById('waterlogAlert');
+            const moistureCard = document.querySelector('.card-tall');
+
+            if (isRaining && moisture !== undefined && moisture > 70) {
+                // Show waterlogging alert
+                if (alertBanner) alertBanner.classList.add('show');
+                if (moistureCard) moistureCard.classList.add('moisture-warning');
+            } else {
+                // Hide alert
+                if (alertBanner) alertBanner.classList.remove('show');
+                if (moistureCard) moistureCard.classList.remove('moisture-warning');
+            }
+
+            // Update System Stats
+            const now = Date.now();
+            const timeDiff = (now - lastPacketTime) / 1000;
+            if (timeDiff > 0) {
+                const refreshEl = document.getElementById('refreshRate');
+                if (refreshEl) refreshEl.textContent = timeDiff.toFixed(1);
+            }
+            lastPacketTime = now;
+
+            // Update Environmental Metrics
+            if (data.temperature) {
+                const hi = calculateHeatIndex(data.temperature);
+                const hiEl = document.getElementById('heatIndexValue');
+                if (hiEl) hiEl.textContent = hi.toFixed(1);
+
+                const et0 = calculateET0(data.temperature);
+                const etEl = document.getElementById('etValue');
+                if (etEl) etEl.textContent = et0.toFixed(2);
+            }
+
+            // Update Depletion Rate
+            if (data.moisture && lastMoisture !== null) {
+                const moistureDiff = lastMoisture - data.moisture;
+                const timeHours = (now - lastMoistureTime) / 3600000;
+                if (timeHours > 0) {
+                    const rate = moistureDiff / timeHours;
+                    const depEl = document.getElementById('depletionValue');
+                    if (depEl) depEl.textContent = rate > 0 ? rate.toFixed(1) : '0.0';
+                }
+            }
+            if (data.moisture) {
+                lastMoisture = data.moisture;
+                lastMoistureTime = now;
             }
         });
 

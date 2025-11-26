@@ -14,6 +14,13 @@ try:
 except:
     predictor = None
 
+try:
+    from disease_detector import predict_disease, get_detector_status
+    DISEASE_DETECTOR_AVAILABLE = True
+except:
+    DISEASE_DETECTOR_AVAILABLE = False
+    print("⚠️  Disease detector not available")
+
 # Configuration
 APP_TEMPLATE = 'dashboard_new.html'  # Using user's custom Apple-style Bento Box dashboard (NOW FIXED!)
 
@@ -23,12 +30,23 @@ CORS(app)  # Enable CORS for all routes
 socketio = SocketIO(app, cors_allowed_origins="*", logger=True, engineio_logger=True, async_mode='threading', ping_timeout=60, ping_interval=25)
 
 import os
+from werkzeug.utils import secure_filename
+
 try:
     import serial
     SERIAL_AVAILABLE = True
 except ImportError:
     SERIAL_AVAILABLE = False
     print("pyserial not available - mushroom monitoring will not work")
+
+# Upload configuration
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'bmp'}
+
+# Create uploads directory if it doesn't exist
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+    print(f"Created uploads directory: {UPLOAD_FOLDER}")
 
 # MQTT Configuration
 MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
@@ -140,14 +158,16 @@ def on_message(client, userdata, msg):
             rain = data.get("rain")
             water_level = to_number_safe(data.get("water_level"))
             
-            # Update current state (Always update internal state, but only emit if not in simulation)
-            current_state["moisture"] = moisture
-            current_state["temperature"] = temperature
-            current_state["ph"] = ph
-            current_state["rain"] = rain
-            current_state["water_level"] = water_level
+            # Update current state (Only update if value is present)
+            if moisture is not None: current_state["moisture"] = moisture
+            if temperature is not None: current_state["temperature"] = temperature
+            if ph is not None: current_state["ph"] = ph
+            if rain is not None: current_state["rain"] = rain
+            if water_level is not None: current_state["water_level"] = water_level
+            
             current_state["last_update"] = timestamp
-            current_state["alert"] = moisture is not None and moisture < MOISTURE_THRESHOLD
+            if moisture is not None:
+                current_state["alert"] = moisture < MOISTURE_THRESHOLD
             
             # Add to history
             sensor_history.append({
@@ -422,6 +442,113 @@ def get_field():
     except Exception as e:
         print(f"Error loading field: {e}")
         return jsonify({"error": str(e)}), 500
+
+def allowed_file(filename):
+    """Check if file extension is allowed."""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/api/analyze-leaf', methods=['POST'])
+def analyze_leaf():
+    """
+    Analyze a leaf image for disease detection.
+    Accepts image file upload and returns disease prediction.
+    """
+    try:
+        # Check if disease detector is available
+        if not DISEASE_DETECTOR_AVAILABLE:
+            return jsonify({
+                "status": "error",
+                "message": "Disease detector module not available"
+            }), 503
+        
+        # Check if file was uploaded
+        if 'file' not in request.files:
+            return jsonify({
+                "status": "error",
+                "message": "No file uploaded"
+            }), 400
+        
+        file = request.files['file']
+        
+        # Check if file has a filename
+        if file.filename == '':
+            return jsonify({
+                "status": "error",
+                "message": "No file selected"
+            }), 400
+        
+        # Validate file type
+        if not allowed_file(file.filename):
+            return jsonify({
+                "status": "error",
+                "message": f"Invalid file type. Allowed: {', '.join(ALLOWED_EXTENSIONS)}"
+            }), 400
+        
+        # Save file temporarily
+        filename = secure_filename(file.filename)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        unique_filename = f"{timestamp}_{filename}"
+        filepath = os.path.join(UPLOAD_FOLDER, unique_filename)
+        
+        file.save(filepath)
+        print(f"📸 Saved uploaded image: {filepath}")
+        
+        try:
+            # Perform disease detection
+            result = predict_disease(filepath)
+            
+            # Add timestamp and status
+            result["status"] = "success"
+            result["timestamp"] = datetime.now().isoformat()
+            result["filename"] = filename
+            
+            print(f"🔬 Disease Analysis: {result['prediction']} ({result['confidence']}%) [Mock: {result['mock']}]")
+            
+            return jsonify(result)
+            
+        except Exception as e:
+            print(f"Error during prediction: {e}")
+            return jsonify({
+                "status": "error",
+                "message": f"Analysis failed: {str(e)}"
+            }), 500
+            
+        finally:
+            # Clean up uploaded file
+            try:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                    print(f"🗑️  Cleaned up: {filepath}")
+            except Exception as e:
+                print(f"Warning: Could not delete temporary file: {e}")
+    
+    except Exception as e:
+        print(f"Error in analyze_leaf endpoint: {e}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@app.route('/api/detector-status', methods=['GET'])
+def detector_status():
+    """Get disease detector status."""
+    try:
+        if not DISEASE_DETECTOR_AVAILABLE:
+            return jsonify({
+                "available": False,
+                "message": "Disease detector module not loaded"
+            })
+        
+        status = get_detector_status()
+        status["available"] = True
+        return jsonify(status)
+        
+    except Exception as e:
+        return jsonify({
+            "available": False,
+            "error": str(e)
+        }), 500
+
 
 @socketio.on('connect')
 def handle_connect():

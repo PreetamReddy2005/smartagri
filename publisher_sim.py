@@ -3,8 +3,19 @@
 import paho.mqtt.client as mqtt
 import json, time, random, os
 from datetime import datetime
+import logging
 
-MQTT_BROKER = os.getenv("MQTT_BROKER", "mosquitto")
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("sim_log.txt"),
+        logging.StreamHandler()
+    ]
+)
+
+MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
 TOPIC = "smartagri/sensor_data"
 
@@ -25,13 +36,19 @@ def random_reading():
     }
 
 def main():
-    client.connect(MQTT_BROKER, MQTT_PORT, 60)
-    client.loop_start()
+    try:
+        client.connect(MQTT_BROKER, MQTT_PORT, 60)
+        client.loop_start()
+        logging.info(f"✅ Connected to MQTT broker at {MQTT_BROKER}:{MQTT_PORT}")
+    except Exception as e:
+        logging.error(f"❌ Connection failed: {e}")
+        return
+
     try:
         while True:
             payload = random_reading()
             client.publish(TOPIC, json.dumps(payload), qos=1)
-            print("Published:", payload)
+            logging.info(f"Published: {payload}")
             time.sleep(4)   # publish every 4s
     except KeyboardInterrupt:
         pass
